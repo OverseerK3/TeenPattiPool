@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teen Patti Pool - Home</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'teen-patti-green': '#0f5132',
+                        'teen-patti-gold': '#ffd700',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gradient-to-br from-green-900 via-green-800 to-green-700 min-h-screen">
+    <div class="container mx-auto px-4 py-4 sm:py-8">
+        <!-- Header -->
+        <div class="text-center mb-8 sm:mb-12">
+            <h1 class="text-3xl sm:text-5xl font-bold text-white mb-4">
+                <i class="fas fa-dice text-teen-patti-gold"></i> Teen Patti Pool
+            </h1>
+            <p class="text-lg sm:text-xl text-green-100">
+                Create or join a room to start playing
+            </p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="max-w-sm sm:max-w-md mx-auto">
+            <!-- Create Room Card -->
+            <div class="bg-white rounded-2xl shadow-2xl p-8 mb-6 transform hover:scale-105 transition-transform duration-300">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 bg-gradient-to-r from-teen-patti-green to-green-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                        <span class="text-2xl text-white">+</span>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Create Room</h2>
+                    <p class="text-gray-600">Start a new game and invite friends</p>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label for="creatorName" class="block text-sm font-medium text-gray-700 mb-2"><i class="fas fa-user mr-2"></i>Your Name</label>
+                        <input type="text" id="creatorName" placeholder="Enter your name" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teen-patti-green focus:border-transparent outline-none transition-colors">
+                    </div>
+                    
+                    <div>
+                        <label for="startingBalance" class="block text-sm font-medium text-gray-700 mb-2"><i class="fas fa-wallet mr-2"></i>Starting Balance (₹)</label>
+                        <input type="number" id="startingBalance" value="1000" min="100" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teen-patti-green focus:border-transparent outline-none transition-colors">
+                    </div>
+                    
+                    <button onclick="createRoom()" 
+                            class="w-full bg-gradient-to-r from-teen-patti-green to-green-600 text-white py-3 rounded-lg font-semibold hover:from-green-700 hover:to-green-800 transition-colors transform hover:scale-105 duration-200">
+                        <i class="fas fa-plus-circle mr-2"></i>Create Room
+                    </button>
+                </div>
+            </div>
+
+            <!-- Join Room Card -->
+            <div class="bg-white rounded-2xl shadow-2xl p-8 transform hover:scale-105 transition-transform duration-300">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                        <span class="text-2xl text-white">→</span>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Join Room</h2>
+                    <p class="text-gray-600">Enter room code to join existing game</p>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label for="playerName" class="block text-sm font-medium text-gray-700 mb-2"><i class="fas fa-user mr-2"></i>Your Name</label>
+                        <input type="text" id="playerName" placeholder="Enter your name" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors">
+                    </div>
+                    
+                    <div>
+                        <label for="roomCode" class="block text-sm font-medium text-gray-700 mb-2"><i class="fas fa-key mr-2"></i>Room Code</label>
+                        <input type="text" id="roomCode" placeholder="Enter 4-digit room code" maxlength="4"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-colors text-center text-2xl font-mono tracking-widest">
+                    </div>
+                    
+                    <button onclick="joinRoom()" 
+                            class="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 rounded-lg font-semibold hover:from-blue-600 hover:to-blue-700 transition-colors transform hover:scale-105 duration-200">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Join Room
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error/Success Messages -->
+        <div id="messageContainer" class="fixed top-4 right-4 z-50"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

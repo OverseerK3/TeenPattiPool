@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teen Patti Pool - Game Lobby</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'teen-patti-green': '#0f5132',
+                        'teen-patti-gold': '#ffd700',
+                    },
+                    animation: {
+                        'bid-fly': 'bidFly 1s ease-out',
+                        'pool-bounce': 'poolBounce 0.5s ease-out',
+                        'pulse-green': 'pulseGreen 1s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        bidFly: {
+                            '0%': { transform: 'scale(1) translateY(0)', opacity: '1' },
+                            '50%': { transform: 'scale(1.2) translateY(-20px)', opacity: '0.8' },
+                            '100%': { transform: 'scale(0.8) translateY(-40px)', opacity: '0' }
+                        },
+                        poolBounce: {
+                            '0%': { transform: 'scale(1)' },
+                            '50%': { transform: 'scale(1.1)' },
+                            '100%': { transform: 'scale(1)' }
+                        },
+                        pulseGreen: {
+                            '0%, 100%': { backgroundColor: '#0f5132', transform: 'scale(1)' },
+                            '50%': { backgroundColor: '#16a34a', transform: 'scale(1.05)' }
+                        }
+                    },
+                    borderWidth: {
+                        '3': '3px',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gradient-to-br from-green-900 via-green-800 to-green-700 min-h-screen">
+    <div class="container mx-auto px-4 py-4 sm:py-6">
+        <!-- Header -->
+        <div class="bg-white rounded-2xl shadow-xl p-4 mb-6">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div class="text-center sm:text-left">
+                    <h1 class="text-2xl sm:text-3xl font-bold text-gray-800"><i class="fas fa-dice text-teen-patti-green"></i> Teen Patti Pool</h1>
+                    <p class="text-gray-600">Room: <span id="roomCodeDisplay" class="font-mono text-lg font-bold text-teen-patti-green"></span></p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="leaveRoom()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-sign-out-alt mr-1"></i>Leave
+                    </button>
+                    <!-- Desktop host controls - hidden on mobile, replaced by mobile version below -->
+                    <div id="creatorControls" class="hidden" style="display: none;">
+                        <!-- Legacy desktop controls - keeping for compatibility -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Area -->
+        <div class="relative">
+            <!-- Mobile-First Circular Game Layout -->
+            <div class="relative w-full max-w-sm mx-auto aspect-square bg-gradient-to-br from-green-800 to-green-900 rounded-full shadow-2xl overflow-hidden">
+                
+                <!-- Background Pattern -->
+                <div class="absolute inset-0 opacity-10">
+                    <div class="w-full h-full bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full"></div>
+                </div>
+                
+                <!-- Players in Circle -->
+                <div id="playersCircle" class="absolute inset-0">
+                    <!-- Players will be positioned around the circle -->
+                </div>
+                
+                <!-- Central Pool Area -->
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <div class="w-32 h-32 sm:w-40 sm:h-40 bg-gradient-to-br from-teen-patti-gold to-yellow-500 rounded-full shadow-xl flex flex-col items-center justify-center border-3 border-white">
+                        <div class="text-center px-2">
+                            <p class="text-[10px] sm:text-xs text-teen-patti-green font-semibold mb-1">TOTAL POOL</p>
+                            <p id="poolAmount" class="text-lg sm:text-2xl font-bold text-teen-patti-green mb-1">₹0</p>
+                            <p class="text-[9px] sm:text-xs text-gray-700">Round #<span id="roundNumber">1</span></p>
+                            <p class="text-[8px] sm:text-[10px] text-gray-600">Bids: <span id="totalBids">0</span></p>
+                        </div>
+                        
+                        <!-- Bid Animation Container -->
+                        <div id="bidAnimationContainer" class="absolute inset-0 pointer-events-none"></div>
+                    </div>
+                </div>
+                
+                <!-- Turn Indicator Ring -->
+                <div id="turnIndicatorRing" class="absolute inset-4 rounded-full border-4 border-transparent transition-all duration-500"></div>
+            </div>
+            
+            <!-- Mobile Bidding Controls -->
+            <div class="mt-6 bg-white rounded-2xl shadow-xl p-4">
+                <div id="biddingArea">
+                    <div class="space-y-4">
+                        <div class="text-center">
+                            <h3 class="text-lg font-bold text-gray-800 mb-2"><i class="fas fa-gavel mr-2"></i>Place Your Bid</h3>
+                            <div id="playerBalance" class="text-sm text-gray-600 mb-3">Your Balance: ₹<span id="currentBalance">0</span></div>
+                        </div>
+                        
+                        <!-- Quick Bid Buttons -->
+                        <div class="grid grid-cols-4 gap-2 mb-4">
+                            <button onclick="setQuickBid(25)" class="bg-gray-100 hover:bg-gray-200 text-gray-800 py-3 rounded-lg transition-colors text-sm font-semibold">₹25</button>
+                            <button onclick="setQuickBid(50)" class="bg-gray-100 hover:bg-gray-200 text-gray-800 py-3 rounded-lg transition-colors text-sm font-semibold">₹50</button>
+                            <button onclick="setQuickBid(100)" class="bg-blue-100 hover:bg-blue-200 text-blue-800 py-3 rounded-lg transition-colors text-sm font-semibold">₹100</button>
+                            <button onclick="setQuickBid(200)" class="bg-red-100 hover:bg-red-200 text-red-800 py-3 rounded-lg transition-colors text-sm font-semibold">₹200</button>
+                        </div>
+                        
+                        <!-- Custom Bid Input -->
+                        <div class="flex gap-2">
+                            <input type="number" id="bidAmount" placeholder="Custom amount" min="1"
+                                   class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teen-patti-green focus:border-transparent outline-none transition-colors text-center font-semibold">
+                            <button onclick="placeBid()" id="bidButton"
+                                    class="px-6 py-3 bg-gradient-to-r from-teen-patti-green to-green-600 text-white rounded-lg font-semibold hover:from-green-700 hover:to-green-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                <i class="fas fa-coins mr-1"></i>BID
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="notYourTurn" style="display: none;" class="text-center py-6">
+                    <div class="animate-pulse">
+                        <i class="fas fa-clock text-3xl text-gray-400 mb-2"></i>
+                        <p class="text-gray-500 text-lg">Wait for your turn...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Host Controls (Mobile Optimized) -->
+            <div id="creatorControlsMobile" class="mt-4 bg-white rounded-2xl shadow-xl p-4" style="display: none;">
+                <h3 class="text-lg font-bold text-gray-800 mb-3 text-center"><i class="fas fa-crown mr-2 text-yellow-500"></i>Host Controls</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="resetPool()" class="bg-yellow-500 hover:bg-yellow-600 text-white py-3 rounded-lg transition-colors font-semibold">
+                        <i class="fas fa-refresh mr-1"></i>Reset Pool
+                    </button>
+                    <button onclick="declareWinner()" class="bg-purple-500 hover:bg-purple-600 text-white py-3 rounded-lg transition-colors font-semibold">
+                        <i class="fas fa-crown mr-1"></i>Declare Winner
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Game Log (Compact Mobile Version) -->
+            <div class="mt-4 bg-white rounded-2xl shadow-xl p-4">
+                <h3 class="text-sm font-bold text-gray-800 mb-2"><i class="fas fa-clipboard-list mr-1"></i>Recent Activity</h3>
+                <div id="gameLog" class="space-y-1 max-h-24 overflow-y-auto text-xs">
+                    <!-- Game actions will be logged here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        <div id="messageContainer" class="fixed top-4 right-4 z-50"></div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Winner Modal -->
+    <div id="winnerModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
+        <div class="bg-white rounded-2xl p-8 max-w-md mx-4">
+            <div class="text-center">
+                <h2 class="text-3xl font-bold text-teen-patti-green mb-4"><i class="fas fa-trophy text-yellow-500"></i> Round Complete!</h2>
+                <p class="text-lg text-gray-700 mb-6">Pool amount: ₹<span id="finalPoolAmount"></span></p>
+                <button onclick="closeWinnerModal()" class="bg-teen-patti-green text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
+                    <i class="fas fa-check mr-2"></i>Continue
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Winner Selection Modal -->
+    <div id="winnerSelectionModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
+        <div class="bg-white rounded-2xl p-8 max-w-md mx-4">
+            <div class="text-center">
+                <h2 class="text-2xl font-bold text-teen-patti-green mb-4"><i class="fas fa-crown text-yellow-500"></i> Select Winner</h2>
+                <p class="text-gray-700 mb-6">Choose which player should win this round</p>
+                <div id="winnerPlayersList" class="space-y-3 mb-6">
+                    <!-- Players will be populated here -->
+                </div>
+                <button onclick="closeWinnerSelectionModal()" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors">
+                    <i class="fas fa-times mr-2"></i>Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Winner Declared Modal -->
+    <div id="winnerDeclaredModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
+        <div class="bg-white rounded-2xl p-8 max-w-md mx-4">
+            <div class="text-center">
+                <h2 class="text-3xl font-bold text-teen-patti-green mb-4"><i class="fas fa-star text-yellow-500"></i> Winner Declared!</h2>
+                <div class="mb-6">
+                    <p class="text-lg text-gray-700"><span id="declaredWinnerName" class="font-bold"></span> wins!</p>
+                    <p class="text-xl font-bold text-teen-patti-green">₹<span id="declaredWinnerAmount"></span></p>
+                    <p class="text-sm text-gray-500 mt-2">Declared by: <span id="declaredBy"></span></p>
+                </div>
+                <button onclick="closeWinnerDeclaredModal()" class="bg-teen-patti-green text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
+                    <i class="fas fa-check mr-2"></i>Continue
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
