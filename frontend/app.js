@@ -161,23 +161,6 @@ class TeenPattiPool {
             }
         });
 
-        // Player packed
-        this.socket.on('playerPacked', (data) => {
-            if (data.success) {
-                this.showMessage(`${data.player} packed (folded)`, 'info');
-                // Update the UI to show packed status
-                this.updateLobbyUI();
-            }
-        });
-
-        // Turn changed
-        this.socket.on('turnChanged', (data) => {
-            if (data.success) {
-                this.showMessage(`Turn changed to ${data.newTurnPlayer} by ${data.changedBy}`, 'info');
-                this.updateLobbyUI();
-            }
-        });
-
         // Pool reset
         this.socket.on('poolReset', (data) => {
             if (data.success) {
@@ -308,31 +291,6 @@ class TeenPattiPool {
         }
 
         this.socket.emit('placeBid', { amount: parseInt(amount) });
-        return true;
-    }
-
-    packCards() {
-        if (!this.currentRoom || !this.currentPlayer) return false;
-
-        if (!this.isConnected) {
-            this.showMessage('Not connected to server', 'error');
-            return false;
-        }
-
-        // Check if player is already packed
-        if (this.currentPlayer.packed) {
-            this.showMessage('You have already packed your cards', 'error');
-            return false;
-        }
-
-        // Check if it's player's turn
-        const currentTurnPlayer = this.currentRoom.players[this.currentRoom.currentTurn];
-        if (currentTurnPlayer.id !== this.currentPlayer.id) {
-            this.showMessage("You can only pack during your turn!", 'error');
-            return false;
-        }
-
-        this.socket.emit('packCards');
         return true;
     }
 
@@ -609,25 +567,26 @@ class TeenPattiPool {
 
                 playerElement.innerHTML = `
                     <div class="relative">
-                        <div class="${circleSize} rounded-full border-2 ${isCurrentTurn && !player.packed ? 'border-yellow-400 shadow-xl ring-2 ring-yellow-300 ring-opacity-50' : 'border-white'} 
-                             bg-gradient-to-br ${player.packed ? 'from-gray-400 to-gray-500' : isCreator ? 'from-purple-500 to-purple-600' : isCurrentPlayer ? 'from-emerald-500 to-emerald-600' : 'from-blue-500 to-blue-600'} 
+                        <div class="${circleSize} rounded-full border-2 ${isCurrentTurn ? 'border-yellow-400 shadow-xl ring-2 ring-yellow-300 ring-opacity-50' : 'border-white'} 
+                             bg-gradient-to-br ${isCreator ? 'from-purple-500 to-purple-600' : isCurrentPlayer ? 'from-emerald-500 to-emerald-600' : 'from-blue-500 to-blue-600'} 
                              flex flex-col items-center justify-center text-white font-bold shadow-lg transition-all duration-300
-                             ${isCurrentTurn && !player.packed ? 'scale-110 animate-pulse' : 'hover:scale-105'} ${player.packed ? 'opacity-70 grayscale' : ''}">
+                             ${isCurrentTurn ? 'scale-110 animate-pulse' : 'hover:scale-105'}">
                             <div class="text-center px-1">
                                 <div class="${textSize} leading-tight font-semibold text-center">${player.name.substring(0, 4)}</div>
                                 <div class="${balanceSize} font-bold text-yellow-100 text-center">₹${player.balance}</div>
                             </div>
                         </div>
                         
-                        ${player.packed ? `<div class="absolute inset-0 flex items-center justify-center">
-                            <div class="bg-red-500 text-white text-[8px] px-1 py-0.5 rounded font-bold shadow-md border border-white">FOLDED</div>
-                        </div>` : ''}
-                        
                         ${isCreator ? `<div class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center shadow-md border border-white">
                             <i class="fas fa-crown text-yellow-800" style="font-size: 7px;"></i>
                         </div>` : ''}
                         
-                        ${isCurrentTurn && !player.packed ? '<div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-yellow-400 rounded-full animate-bounce shadow-md"></div>' : ''}
+                        ${isCurrentTurn ? '<div class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-yellow-400 rounded-full animate-bounce shadow-md"></div>' : ''}
+                        
+                        ${this.currentPlayer?.isCreator && player.id !== this.currentPlayer.id ? 
+                            `<button onclick="removePlayer('${player.id}')" class="absolute -top-0.5 -left-0.5 w-4 h-4 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors shadow-md border border-white" title="Remove ${player.name}">
+                                <i class="fas fa-times" style="font-size: 7px;"></i>
+                            </button>` : ''}
                     </div>
                 `;
 
@@ -809,49 +768,16 @@ class TeenPattiPool {
         const biddingArea = document.getElementById('biddingArea');
         const notYourTurn = document.getElementById('notYourTurn');
         const bidButton = document.getElementById('bidButton');
-        const packButton = document.getElementById('packButton');
         
         if (!this.currentRoom || !this.currentPlayer) return;
 
         const isYourTurn = this.currentRoom.players[this.currentRoom.currentTurn].id === this.currentPlayer.id;
-        const isPlayerPacked = this.currentPlayer.packed;
-        
-        // If player is packed, show packed message
-        if (isPlayerPacked) {
-            if (biddingArea) biddingArea.style.display = 'none';
-            if (notYourTurn) {
-                notYourTurn.style.display = 'block';
-                notYourTurn.innerHTML = `
-                    <div class="text-center py-6">
-                        <i class="fas fa-user-slash text-4xl text-red-400 mb-3"></i>
-                        <p class="text-red-500 text-xl font-bold">You are folded!</p>
-                        <p class="text-gray-500 text-sm mt-2">You'll be back in the next round</p>
-                    </div>
-                `;
-            }
-            return;
-        }
-        
-        // Reset notYourTurn content for non-packed players
-        if (notYourTurn) {
-            notYourTurn.innerHTML = `
-                <div class="text-center py-6">
-                    <i class="fas fa-clock text-3xl text-gray-400 mb-2"></i>
-                    <p class="text-gray-500 text-lg">Wait for your turn...</p>
-                </div>
-            `;
-        }
         
         if (biddingArea) biddingArea.style.display = isYourTurn ? 'block' : 'none';
         if (notYourTurn) notYourTurn.style.display = isYourTurn ? 'none' : 'block';
         
         if (bidButton) {
             bidButton.disabled = !isYourTurn || this.currentPlayer.balance <= 0;
-        }
-        
-        if (packButton) {
-            packButton.disabled = !isYourTurn;
-            packButton.style.display = 'block';
         }
     }
 
@@ -906,88 +832,6 @@ class TeenPattiPool {
         if (modal) {
             modal.style.display = 'none';
         }
-    }
-
-    showPlayerManagementModal() {
-        if (!this.currentRoom || !this.currentPlayer.isCreator) {
-            this.showMessage('Only the host can manage players', 'error');
-            return;
-        }
-
-        const modal = document.getElementById('playerManagementModal');
-        const turnPlayersList = document.getElementById('turnPlayersList');
-        const removePlayersList = document.getElementById('removePlayersList');
-        
-        if (modal && turnPlayersList && removePlayersList) {
-            // Clear previous content
-            turnPlayersList.innerHTML = '';
-            removePlayersList.innerHTML = '';
-            
-            // Populate turn management section (exclude packed players)
-            this.currentRoom.players.forEach(player => {
-                if (!player.packed) {
-                    const isCurrentTurn = this.currentRoom.players[this.currentRoom.currentTurn].id === player.id;
-                    const playerButton = document.createElement('button');
-                    playerButton.className = `w-full p-2 rounded-lg transition-colors font-semibold text-sm ${
-                        isCurrentTurn 
-                            ? 'bg-green-500 text-white cursor-default' 
-                            : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
-                    }`;
-                    playerButton.innerHTML = `
-                        <i class="fas fa-user mr-2"></i>${player.name}
-                        ${isCurrentTurn ? ' (Current Turn)' : ''}
-                        ${player.isCreator ? ' <i class="fas fa-crown text-yellow-500"></i>' : ''}
-                    `;
-                    
-                    if (!isCurrentTurn) {
-                        playerButton.onclick = () => changeTurnTo(player.id);
-                    }
-                    
-                    turnPlayersList.appendChild(playerButton);
-                }
-            });
-            
-            // Populate remove players section (exclude current player)
-            this.currentRoom.players.forEach(player => {
-                if (player.id !== this.currentPlayer.id) {
-                    const removeButton = document.createElement('button');
-                    removeButton.className = 'w-full p-2 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg transition-colors font-semibold text-sm';
-                    removeButton.innerHTML = `
-                        <i class="fas fa-user-minus mr-2"></i>Remove ${player.name}
-                        ${player.isCreator ? ' <i class="fas fa-crown text-yellow-500"></i>' : ''}
-                        ${player.packed ? ' (Folded)' : ''}
-                    `;
-                    removeButton.onclick = () => removePlayerFromModal(player.id, player.name);
-                    
-                    removePlayersList.appendChild(removeButton);
-                }
-            });
-            
-            modal.style.display = 'flex';
-        }
-    }
-
-    closePlayerManagementModal() {
-        const modal = document.getElementById('playerManagementModal');
-        if (modal) {
-            modal.style.display = 'none';
-        }
-    }
-
-    changeTurn(playerId) {
-        if (!this.currentRoom || !this.currentPlayer.isCreator) {
-            this.showMessage('Only the host can change turns', 'error');
-            return false;
-        }
-
-        if (!this.isConnected) {
-            this.showMessage('Not connected to server', 'error');
-            return false;
-        }
-
-        this.socket.emit('changeTurn', { newTurnPlayerId: playerId });
-        this.closePlayerManagementModal();
-        return true;
     }
 
     closeWinnerModal() {
@@ -1089,12 +933,6 @@ function setQuickBid(amount) {
     }
 }
 
-function packCards() {
-    if (confirm('Are you sure you want to pack (fold) your cards? You will be out of this round.')) {
-        game.packCards();
-    }
-}
-
 function resetPool() {
     if (confirm('Are you sure you want to reset the pool and start a new round? This will restore all players to their starting balance.')) {
         game.resetPool();
@@ -1127,62 +965,8 @@ function closeWinnerDeclaredModal() {
     game.closeWinnerDeclaredModal();
 }
 
-function showPlayerManagement() {
-    game.showPlayerManagementModal();
-}
-
-function closePlayerManagementModal() {
-    game.closePlayerManagementModal();
-}
-
-function changeTurnTo(playerId) {
-    if (confirm('Are you sure you want to change the turn to this player?')) {
-        game.changeTurn(playerId);
-    }
-}
-
-function removePlayerFromModal(playerId, playerName) {
-    if (confirm(`Are you sure you want to remove ${playerName} from the room?`)) {
-        game.removePlayer(playerId);
-        game.closePlayerManagementModal();
-    }
-}
-
-function toggleTheme() {
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-    
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-    
-    // Update theme toggle button
-    updateThemeToggleButton(newTheme);
-}
-
-function updateThemeToggleButton(theme) {
-    const themeToggle = document.getElementById('themeToggle');
-    if (themeToggle) {
-        if (theme === 'dark') {
-            themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
-            themeToggle.className = 'bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-2 rounded-lg transition-colors';
-        } else {
-            themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
-            themeToggle.className = 'bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-2 rounded-lg transition-colors';
-        }
-    }
-}
-
-function initializeTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    updateThemeToggleButton(savedTheme);
-}
-
 // Auto-format room code input and other event handlers
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize theme
-    initializeTheme();
-    
     const roomCodeInput = document.getElementById('roomCode');
     if (roomCodeInput) {
         roomCodeInput.addEventListener('input', function(e) {
